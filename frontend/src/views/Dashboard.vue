@@ -84,6 +84,7 @@ onMounted(async () => {
             <div>
               <div class="duty-name">{{ entry.officer_name }}</div>
               <div class="text-muted" style="font-size:0.85rem">{{ entry.date }}</div>
+              <div class="text-muted" style="font-size:0.85rem">{{ entry.officer_duty }}</div>
             </div>
           </div>
         </div>

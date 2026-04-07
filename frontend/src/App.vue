@@ -12,7 +12,7 @@ import { RouterView, RouterLink } from 'vue-router'
       </div>
       <ul class="nav-links">
         <li><RouterLink to="/" exact-active-class="active">หน้าหลัก</RouterLink></li>
-        <li><RouterLink to="/officers" active-class="active">เจ้าหน้าที่</RouterLink></li>
+        <li><RouterLink to="/officers" active-class="active">รายชื่อ</RouterLink></li>
         <li><RouterLink to="/schedule" active-class="active">ตารางเวร</RouterLink></li>
         <li><RouterLink to="/exchanges" active-class="active">ขอเปลี่ยนเวร</RouterLink></li>
       </ul>
