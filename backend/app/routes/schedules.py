@@ -13,8 +13,8 @@ def schedule_helper(schedule) -> dict:
         "year": schedule["year"],
         "month": schedule["month"],
         "entries": schedule.get("entries", []),
-        "created_at": schedule.get("created_at", datetime.utcnow()),
-        "updated_at": schedule.get("updated_at", datetime.utcnow()),
+        "created_at": schedule.get("created_at"),
+        "updated_at": schedule.get("updated_at"),
     }
 
 

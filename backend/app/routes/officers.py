@@ -15,7 +15,7 @@ def officer_helper(officer) -> dict:
         "badge_number": officer["badge_number"],
         "department": officer.get("department"),
         "phone": officer.get("phone"),
-        "created_at": officer.get("created_at", datetime.utcnow()),
+        "created_at": officer.get("created_at"),
     }
 
 

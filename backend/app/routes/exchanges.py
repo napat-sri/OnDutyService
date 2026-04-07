@@ -19,8 +19,8 @@ def exchange_helper(exchange) -> dict:
         "reason": exchange.get("reason"),
         "status": exchange.get("status", ExchangeStatus.pending),
         "admin_note": exchange.get("admin_note"),
-        "created_at": exchange.get("created_at", datetime.utcnow()),
-        "updated_at": exchange.get("updated_at", datetime.utcnow()),
+        "created_at": exchange.get("created_at"),
+        "updated_at": exchange.get("updated_at"),
     }
 
 
