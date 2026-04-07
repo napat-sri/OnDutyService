@@ -56,8 +56,6 @@ docker compose up --build
 
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env            # Edit MONGODB_URL if needed
 uvicorn app.main:app --reload
