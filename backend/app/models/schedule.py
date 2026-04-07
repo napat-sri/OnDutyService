@@ -6,6 +6,7 @@ from datetime import date, datetime
 class DutyEntry(BaseModel):
     officer_id: str
     officer_name: str
+    officer_duty: str
     date: str  # ISO date string YYYY-MM-DD
 
 

@@ -9,11 +9,15 @@ const success = ref(null)
 
 const showModal = ref(false)
 const editingOfficer = ref(null)
-const form = ref({ name: '', rank: '', badge_number: '', department: '', phone: '' })
+const form = ref({ name: '', rank: '', position: '', department: '', phone: '' })
 
-const ranks = ['พลตำรวจ', 'จ่าสิบตำรวจ', 'สิบตำรวจเอก', 'สิบตำรวจโท', 'สิบตำรวจตรี',
-  'ดาบตำรวจ', 'ร้อยตำรวจตรี', 'ร้อยตำรวจโท', 'ร้อยตำรวจเอก',
-  'พันตำรวจตรี', 'พันตำรวจโท', 'พันตำรวจเอก', 'พลตำรวจตรี']
+const ranks = ['นาย', 'นาง', 'นางสาว',
+  'จ.ต.', 'จ.ต.หญิง', 'จ.ท.', 'จ.ท.หญิง', 'จ.อ.', 'จ.อ.หญิง',
+  'พ.อ.ต.', 'พ.อ.ต.หญิง', 'พ.อ.ท.', 'พ.อ.ท.หญิง', 'พ.อ.อ.', 'พ.อ.อ.หญิง',
+  'ร.ต.', 'ร.ต.หญิง', 'ร.ท.', 'ร.ท.หญิง', 'ร.อ.', 'ร.อ.หญิง',
+  'น.ต.', 'น.ต.หญิง']
+
+const departments = ['บก.ศซว.ทอ.', 'กมซ.ศซว.ทอ.', 'กวซ.ศซว.ทอ.', 'กบสซ.ศซว.ทอ.',]
 
 async function loadOfficers() {
   try {
@@ -29,7 +33,7 @@ async function loadOfficers() {
 
 function openCreate() {
   editingOfficer.value = null
-  form.value = { name: '', rank: '', badge_number: '', department: '', phone: '' }
+  form.value = { name: '', rank: '', position: '', department: '', phone: '' }
   showModal.value = true
 }
 
@@ -97,10 +101,10 @@ onMounted(loadOfficers)
           <thead>
             <tr>
               <th>#</th>
-              <th>ชื่อ</th>
               <th>ยศ</th>
-              <th>เลขประจำตัว</th>
-              <th>หน่วยงาน</th>
+              <th>ชื่อ</th>
+              <th>ตำแหน่ง</th>
+              <th>สังกัด</th>
               <th>เบอร์โทร</th>
               <th>จัดการ</th>
             </tr>
@@ -108,9 +112,9 @@ onMounted(loadOfficers)
           <tbody>
             <tr v-for="(officer, idx) in officers" :key="officer._id">
               <td>{{ idx + 1 }}</td>
-              <td><strong>{{ officer.name }}</strong></td>
               <td>{{ officer.rank }}</td>
-              <td>{{ officer.badge_number }}</td>
+              <td><strong>{{ officer.name }}</strong></td>
+              <td>{{ officer.position }}</td>
               <td>{{ officer.department || '-' }}</td>
               <td>{{ officer.phone || '-' }}</td>
               <td>
@@ -134,10 +138,6 @@ onMounted(loadOfficers)
         </div>
         <form @submit.prevent="saveOfficer">
           <div class="form-group">
-            <label>ชื่อ-นามสกุล *</label>
-            <input type="text" v-model="form.name" required placeholder="เช่น สมชาย ใจดี" />
-          </div>
-          <div class="form-group">
             <label>ยศ *</label>
             <select v-model="form.rank" required>
               <option value="">-- เลือกยศ --</option>
@@ -145,12 +145,19 @@ onMounted(loadOfficers)
             </select>
           </div>
           <div class="form-group">
-            <label>เลขประจำตัว *</label>
-            <input type="text" v-model="form.badge_number" required placeholder="เช่น 12345" />
+            <label>ชื่อ-นามสกุล *</label>
+            <input type="text" v-model="form.name" required placeholder="เช่น สมชาย ใจดี" />
           </div>
           <div class="form-group">
-            <label>หน่วยงาน</label>
-            <input type="text" v-model="form.department" placeholder="เช่น งานสืบสวน" />
+            <label>ตำแหน่ง (ตัวย่อ) *</label>
+            <input type="text" v-model="form.position" required placeholder="เช่น นปซ.ผสพซ.2 กวซ.ศซว.ทอ." />
+          </div>
+          <div class="form-group">
+            <label>สังกัด *</label>
+            <select v-model="form.department" required>
+              <option value="">-- เลือกสังกัด --</option>
+              <option v-for="d in departments" :key="d" :value="d">{{ d }}</option>
+            </select>
           </div>
           <div class="form-group">
             <label>เบอร์โทรศัพท์</label>

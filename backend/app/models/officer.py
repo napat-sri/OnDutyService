@@ -6,7 +6,7 @@ from datetime import datetime
 class OfficerBase(BaseModel):
     name: str
     rank: str
-    badge_number: str
+    position: str
     department: Optional[str] = None
     phone: Optional[str] = None
 
@@ -18,7 +18,7 @@ class OfficerCreate(OfficerBase):
 class OfficerUpdate(BaseModel):
     name: Optional[str] = None
     rank: Optional[str] = None
-    badge_number: Optional[str] = None
+    position: Optional[str] = None
     department: Optional[str] = None
     phone: Optional[str] = None
 

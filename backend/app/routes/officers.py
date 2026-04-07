@@ -12,7 +12,7 @@ def officer_helper(officer) -> dict:
         "_id": str(officer["_id"]),
         "name": officer["name"],
         "rank": officer["rank"],
-        "badge_number": officer["badge_number"],
+        "position": officer["position"],
         "department": officer.get("department"),
         "phone": officer.get("phone"),
         "created_at": officer.get("created_at"),

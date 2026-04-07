@@ -16,7 +16,7 @@ class ExchangeBase(BaseModel):
     requester_date: str  # ISO date string YYYY-MM-DD
     target_id: str
     target_name: str
-    target_date: str  # ISO date string YYYY-MM-DD
+    target_date: Optional[str] = None  # ISO date string YYYY-MM-DD
     reason: Optional[str] = None
 
 
