@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
@@ -9,6 +9,7 @@ class OfficerBase(BaseModel):
     position: str
     department: Optional[str] = None
     phone: Optional[str] = None
+    duty_types: List[str] = []
 
 
 class OfficerCreate(OfficerBase):
@@ -21,6 +22,7 @@ class OfficerUpdate(BaseModel):
     position: Optional[str] = None
     department: Optional[str] = None
     phone: Optional[str] = None
+    duty_types: Optional[List[str]] = None
 
 
 class Officer(OfficerBase):
@@ -29,3 +31,11 @@ class Officer(OfficerBase):
 
     class Config:
         populate_by_name = True
+
+
+DUTY_TYPES = [
+    "นายเวรประจำวัน",
+    "เสมียนเวร",
+    "ยามรักษาการณ์",
+    "ผู้ช่วยนายเวร",
+]

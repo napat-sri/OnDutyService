@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from bson import ObjectId
 from datetime import datetime
 from ..database import get_database
-from ..models.officer import OfficerCreate, OfficerUpdate
+from ..models.officer import OfficerCreate, OfficerUpdate, DUTY_TYPES
 
 router = APIRouter(prefix="/officers", tags=["officers"])
 
@@ -15,8 +15,14 @@ def officer_helper(officer) -> dict:
         "position": officer["position"],
         "department": officer.get("department"),
         "phone": officer.get("phone"),
+        "duty_types": officer.get("duty_types", []),
         "created_at": officer.get("created_at"),
     }
+
+
+@router.get("/duty-types")
+async def list_duty_types():
+    return DUTY_TYPES
 
 
 @router.get("/")
