@@ -12,6 +12,7 @@ export const officerService = {
   create: (data) => api.post('/officers/', data),
   update: (id, data) => api.put(`/officers/${id}`, data),
   delete: (id) => api.delete(`/officers/${id}`),
+  listDutyTypes: () => api.get('/officers/duty-types'),
 }
 
 // Schedules

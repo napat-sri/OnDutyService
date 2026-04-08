@@ -4,6 +4,7 @@ import { scheduleService, officerService } from '../services/api'
 
 const schedules = ref([])
 const officers = ref([])
+const dutyTypes = ref([])
 const loading = ref(false)
 const error = ref(null)
 const success = ref(null)
@@ -14,7 +15,7 @@ const currentSchedule = ref(null)
 const loadingSchedule = ref(false)
 
 const showAddEntryModal = ref(false)
-const entryForm = ref({ officer_id: '', date: '' })
+const entryForm = ref({ officer_id: '', date: '', officer_duty: '' })
 
 const months = [
   { value: 1, label: 'มกราคม' }, { value: 2, label: 'กุมภาพันธ์' },
@@ -42,8 +43,10 @@ const calendarDays = computed(() => {
   return days
 })
 
-const selectedOfficer = computed(() => {
-  return officers.value.find(o => o._id === entryForm.value.officer_id)
+// Officers eligible for the selected duty type
+const eligibleOfficers = computed(() => {
+  if (!entryForm.value.officer_duty) return officers.value
+  return officers.value.filter(o => (o.duty_types || []).includes(entryForm.value.officer_duty))
 })
 
 async function loadSchedule() {
@@ -79,17 +82,18 @@ async function createSchedule() {
 }
 
 function openAddEntry(dateStr) {
-  entryForm.value = { officer_id: '', date: dateStr }
+  entryForm.value = { officer_id: '', date: dateStr, officer_duty: '' }
   showAddEntryModal.value = true
 }
 
 async function addEntry() {
-  if (!entryForm.value.officer_id || !entryForm.value.date) return
+  if (!entryForm.value.officer_id || !entryForm.value.date || !entryForm.value.officer_duty) return
   const officer = officers.value.find(o => o._id === entryForm.value.officer_id)
   if (!officer) return
   const newEntry = {
     officer_id: officer._id,
     officer_name: `${officer.rank} ${officer.name}`,
+    officer_duty: entryForm.value.officer_duty,
     date: entryForm.value.date,
   }
   const updatedEntries = [...(currentSchedule.value.entries || []), newEntry]
@@ -106,10 +110,10 @@ async function addEntry() {
   }
 }
 
-async function removeEntry(dateStr, officerId) {
+async function removeEntry(dateStr, officerId, officerDuty) {
   if (!confirm('ยืนยันการลบเวรนี้?')) return
   const updatedEntries = currentSchedule.value.entries.filter(
-    e => !(e.date === dateStr && e.officer_id === officerId)
+    e => !(e.date === dateStr && e.officer_id === officerId && e.officer_duty === officerDuty)
   )
   try {
     const res = await scheduleService.update(selectedYear.value, selectedMonth.value, {
@@ -130,8 +134,9 @@ function getWeekday(dateStr) {
 }
 
 onMounted(async () => {
-  const [offRes] = await Promise.all([officerService.list()])
+  const [offRes, dtRes] = await Promise.all([officerService.list(), officerService.listDutyTypes()])
   officers.value = offRes.data
+  dutyTypes.value = dtRes.data
   await loadSchedule()
 })
 </script>
@@ -196,13 +201,13 @@ onMounted(async () => {
           <div class="cal-day-num">{{ dayObj.day }}</div>
           <div class="cal-entries">
             <div
-              v-for="entry in dayObj.entries"
-              :key="entry.officer_id"
-              class="cal-entry"
-              :title="entry.officer_name"
-            >
-              <span>👮 {{ entry.officer_name }}</span>
-              <button class="entry-remove" @click="removeEntry(dayObj.dateStr, entry.officer_id)" title="ลบ">✕</button>
+            v-for="entry in dayObj.entries"
+            :key="entry.officer_id + entry.officer_duty"
+            class="cal-entry"
+            :title="entry.officer_name + (entry.officer_duty ? ' - ' + entry.officer_duty : '')"
+          >
+            <span>{{ entry.officer_duty ? '🪖 ' + entry.officer_duty + ': ' : '👮 ' }}{{ entry.officer_name }}</span>
+            <button class="entry-remove" @click="removeEntry(dayObj.dateStr, entry.officer_id, entry.officer_duty)" title="ลบ">✕</button>
             </div>
           </div>
           <button class="add-entry-btn" @click="openAddEntry(dayObj.dateStr)" title="เพิ่มเวร">+</button>
@@ -218,16 +223,26 @@ onMounted(async () => {
           <button class="close-btn" @click="showAddEntryModal = false">✕</button>
         </div>
         <div class="form-group">
-          <label>เลือกเจ้าหน้าที่</label>
-          <select v-model="entryForm.officer_id">
-            <option value="">-- เลือกเจ้าหน้าที่ --</option>
-            <option v-for="o in officers" :key="o._id" :value="o._id">
-              {{ o.rank }} {{ o.name }} ({{ o.badge_number }})
-            </option>
+          <label>ประเภทเวร *</label>
+          <select v-model="entryForm.officer_duty" @change="entryForm.officer_id = ''">
+            <option value="">-- เลือกประเภทเวร --</option>
+            <option v-for="dt in dutyTypes" :key="dt" :value="dt">{{ dt }}</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>เลือกเจ้าหน้าที่ *</label>
+          <select v-model="entryForm.officer_id" :disabled="!entryForm.officer_duty">
+            <option value="">-- เลือกเจ้าหน้าที่ --</option>
+            <option v-for="o in eligibleOfficers" :key="o._id" :value="o._id">
+              {{ o.rank }} {{ o.name }}
+            </option>
+          </select>
+          <small v-if="entryForm.officer_duty && eligibleOfficers.length === 0" class="text-muted">
+            ไม่มีเจ้าหน้าที่ที่ได้รับมอบหมายหน้าที่นี้
+          </small>
+        </div>
         <div class="flex gap-2 mt-2">
-          <button class="btn btn-primary" @click="addEntry" :disabled="!entryForm.officer_id">💾 เพิ่มเวร</button>
+          <button class="btn btn-primary" @click="addEntry" :disabled="!entryForm.officer_id || !entryForm.officer_duty">💾 เพิ่มเวร</button>
           <button class="btn btn-secondary" @click="showAddEntryModal = false">ยกเลิก</button>
         </div>
       </div>

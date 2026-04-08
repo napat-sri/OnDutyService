@@ -1,15 +1,18 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { officerService } from '../services/api'
 
 const officers = ref([])
+const dutyTypes = ref([])
 const loading = ref(true)
 const error = ref(null)
 const success = ref(null)
 
 const showModal = ref(false)
 const editingOfficer = ref(null)
-const form = ref({ name: '', rank: '', position: '', department: '', phone: '' })
+const form = ref({ name: '', rank: '', position: '', department: '', phone: '', duty_types: [] })
+
+const activeTab = ref('ทั้งหมด')
 
 const ranks = ['นาย', 'นาง', 'นางสาว',
   'จ.ต.', 'จ.ต.หญิง', 'จ.ท.', 'จ.ท.หญิง', 'จ.อ.', 'จ.อ.หญิง',
@@ -19,11 +22,22 @@ const ranks = ['นาย', 'นาง', 'นางสาว',
 
 const departments = ['บก.ศซว.ทอ.', 'กมซ.ศซว.ทอ.', 'กวซ.ศซว.ทอ.', 'กบสซ.ศซว.ทอ.',]
 
+const tabs = computed(() => ['ทั้งหมด', ...dutyTypes.value])
+
+const filteredOfficers = computed(() => {
+  if (activeTab.value === 'ทั้งหมด') return officers.value
+  return officers.value.filter(o => (o.duty_types || []).includes(activeTab.value))
+})
+
 async function loadOfficers() {
   try {
     loading.value = true
-    const res = await officerService.list()
-    officers.value = res.data
+    const [offRes, dtRes] = await Promise.all([
+      officerService.list(),
+      officerService.listDutyTypes(),
+    ])
+    officers.value = offRes.data
+    dutyTypes.value = dtRes.data
   } catch (e) {
     error.value = 'ไม่สามารถโหลดข้อมูลเจ้าหน้าที่ได้'
   } finally {
@@ -33,13 +47,13 @@ async function loadOfficers() {
 
 function openCreate() {
   editingOfficer.value = null
-  form.value = { name: '', rank: '', position: '', department: '', phone: '' }
+  form.value = { name: '', rank: '', position: '', department: '', phone: '', duty_types: [] }
   showModal.value = true
 }
 
 function openEdit(officer) {
   editingOfficer.value = officer
-  form.value = { ...officer }
+  form.value = { ...officer, duty_types: [...(officer.duty_types || [])] }
   showModal.value = true
 }
 
@@ -91,10 +105,30 @@ onMounted(loadOfficers)
     <div v-if="error" class="alert alert-error">{{ error }}</div>
     <div v-if="success" class="alert alert-success">{{ success }}</div>
 
+    <!-- Duty type tabs -->
+    <div class="duty-tabs">
+      <button
+        v-for="tab in tabs"
+        :key="tab"
+        class="duty-tab"
+        :class="{ active: activeTab === tab }"
+        @click="activeTab = tab"
+      >
+        {{ tab }}
+        <span class="tab-count">
+          {{
+            tab === 'ทั้งหมด'
+              ? officers.length
+              : officers.filter(o => (o.duty_types || []).includes(tab)).length
+          }}
+        </span>
+      </button>
+    </div>
+
     <div class="card">
       <div v-if="loading" class="text-center text-muted">กำลังโหลด...</div>
-      <div v-else-if="officers.length === 0" class="text-center text-muted" style="padding:2rem">
-        ยังไม่มีเจ้าหน้าที่ในระบบ คลิก "เพิ่มเจ้าหน้าที่" เพื่อเริ่มต้น
+      <div v-else-if="filteredOfficers.length === 0" class="text-center text-muted" style="padding:2rem">
+        ไม่มีเจ้าหน้าที่ในหน้านี้
       </div>
       <div v-else class="table-wrapper">
         <table>
@@ -105,17 +139,28 @@ onMounted(loadOfficers)
               <th>ชื่อ</th>
               <th>ตำแหน่ง</th>
               <th>สังกัด</th>
+              <th>หน้าที่เวร</th>
               <th>เบอร์โทร</th>
               <th>จัดการ</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(officer, idx) in officers" :key="officer._id">
+            <tr v-for="(officer, idx) in filteredOfficers" :key="officer._id">
               <td>{{ idx + 1 }}</td>
               <td>{{ officer.rank }}</td>
               <td><strong>{{ officer.name }}</strong></td>
               <td>{{ officer.position }}</td>
               <td>{{ officer.department || '-' }}</td>
+              <td>
+                <div class="duty-badges">
+                  <span
+                    v-for="dt in (officer.duty_types || [])"
+                    :key="dt"
+                    class="duty-badge"
+                  >{{ dt }}</span>
+                  <span v-if="!(officer.duty_types || []).length" class="text-muted">-</span>
+                </div>
+              </td>
               <td>{{ officer.phone || '-' }}</td>
               <td>
                 <div class="flex gap-2">
@@ -160,6 +205,19 @@ onMounted(loadOfficers)
             </select>
           </div>
           <div class="form-group">
+            <label>หน้าที่เวร</label>
+            <div class="checkbox-group">
+              <label v-for="dt in dutyTypes" :key="dt" class="checkbox-label">
+                <input
+                  type="checkbox"
+                  :value="dt"
+                  v-model="form.duty_types"
+                />
+                {{ dt }}
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
             <label>เบอร์โทรศัพท์</label>
             <input type="text" v-model="form.phone" placeholder="เช่น 081-234-5678" />
           </div>
@@ -172,3 +230,87 @@ onMounted(loadOfficers)
     </div>
   </div>
 </template>
+
+<style scoped>
+.duty-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.duty-tab {
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  border: 2px solid #c5cae9;
+  background: white;
+  color: #546e7a;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.duty-tab:hover {
+  border-color: #3949ab;
+  color: #1a237e;
+}
+
+.duty-tab.active {
+  background: #3949ab;
+  border-color: #3949ab;
+  color: white;
+}
+
+.tab-count {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 0 0.4rem;
+  font-size: 0.75rem;
+  min-width: 20px;
+  text-align: center;
+}
+
+.duty-tab:not(.active) .tab-count {
+  background: #e8eaf6;
+  color: #3949ab;
+}
+
+.duty-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.duty-badge {
+  background: #e3f2fd;
+  color: #1565c0;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+</style>
