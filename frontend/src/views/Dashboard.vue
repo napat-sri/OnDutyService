@@ -80,7 +80,10 @@ onMounted(async () => {
         </div>
         <div v-else class="duty-list">
           <div v-for="entry in dutyToday" :key="entry.officer_id" class="duty-item">
-            <span class="duty-icon">👮</span>
+            <span class="duty-icon" v-if="entry.officer_duty == 'นายทหารเวร'">🧑‍✈️</span>
+            <span class="duty-icon" v-if="entry.officer_duty == 'นายทหารเวร (หญิง)'">👮‍♀️</span>
+            <span class="duty-icon" v-if="entry.officer_duty == 'เสมียนเวร'">📋</span>
+            <span class="duty-icon" v-if="entry.officer_duty == 'เวรประชาสัมพันธ์'">📢</span>
             <div>
               <div class="duty-name">{{ entry.officer_name }}</div>
               <div class="text-muted" style="font-size:0.85rem">{{ entry.date }}</div>
@@ -123,7 +126,7 @@ onMounted(async () => {
 .stat-card {
   background: white;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 0.75rem;
   text-align: center;
   box-shadow: 0 2px 12px rgba(26, 35, 126, 0.08);
   transition: transform 0.2s;
@@ -131,9 +134,9 @@ onMounted(async () => {
 
 .stat-card:hover { transform: translateY(-2px); }
 
-.stat-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-.stat-value { font-size: 2.5rem; font-weight: 700; color: #1a237e; }
-.stat-label { font-size: 0.9rem; color: #546e7a; margin-top: 0.25rem; }
+.stat-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.stat-value { font-size: 2rem; font-weight: 700; color: #1a237e; }
+.stat-label { font-size: 0.8rem; color: #546e7a; margin-top: 0.25rem; }
 .stat-link { display: block; margin-top: 0.75rem; color: #3949ab; font-size: 0.85rem; text-decoration: none; }
 .stat-link:hover { text-decoration: underline; }
 
