@@ -15,7 +15,7 @@ import { RouterView, RouterLink } from 'vue-router'
         <li><RouterLink to="/officers" active-class="active">รายชื่อ</RouterLink></li>
         <li><RouterLink to="/schedule" active-class="active">ตารางเวร</RouterLink></li>
         <li><RouterLink to="/exchanges" active-class="active">ขอเปลี่ยนเวร</RouterLink></li>
-        <li><RouterLink to="/personnel" active-class="active">บุคลากร</RouterLink></li>
+        <li><RouterLink to="/personnel" active-class="active">จำหน่ายเวร</RouterLink></li>
       </ul>
     </nav>
     <main class="main-content">

@@ -350,7 +350,7 @@ onMounted(loadData)
               type="text"
               v-model="form.reason"
               required
-              placeholder="เช่น ลาพักผ่อน, ลาป่วย, ติดภารกิจ"
+              placeholder="เช่น ราชการ, ศึกษา"
             />
           </div>
           <div class="flex gap-2 mt-2">
@@ -531,4 +531,8 @@ onMounted(loadData)
 }
 
 .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #1a237e; }
+
+td {
+  padding: 0.75rem 0 0.75rem 0;
+}
 </style>
