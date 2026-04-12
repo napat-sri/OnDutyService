@@ -34,4 +34,13 @@ export const exchangeService = {
   delete: (id) => api.delete(`/exchanges/${id}`),
 }
 
+// Absences
+export const absenceService = {
+  list: (year, month) => api.get('/absences/', { params: { year, month } }),
+  get: (id) => api.get(`/absences/${id}`),
+  create: (data) => api.post('/absences/', data),
+  update: (id, data) => api.put(`/absences/${id}`, data),
+  delete: (id) => api.delete(`/absences/${id}`),
+}
+
 export default api
