@@ -171,7 +171,7 @@ onMounted(loadData)
 <template>
   <div>
     <div class="page-header">
-      <h1 class="page-title">📊 ผู้ปฏิบัติหน้าที่</h1>
+      <h1 class="page-title">📊 จำหน่ายเวร</h1>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -233,7 +233,7 @@ onMounted(loadData)
           <table class="gantt-table">
             <thead>
               <tr>
-                <th class="gantt-officer-col">เจ้าหน้าที่</th>
+                <th class="gantt-officer-col">ยศ-ชื่อ สกุล</th>
                 <th
                   v-for="d in daysInMonth"
                   :key="d.dateStr"
@@ -283,7 +283,7 @@ onMounted(loadData)
 
       <!-- Absence List for the month -->
       <div class="card" style="margin-top:1.5rem">
-        <h2 class="section-title">📋 รายการไม่พร้อมปฏิบัติหน้าที่</h2>
+        <h2 class="section-title">📋 รายชื่อจำหน่าย</h2>
         <div v-if="absenceList.length === 0" class="text-center text-muted" style="padding:1.5rem">
           ไม่มีรายการสำหรับเดือนนี้
         </div>
@@ -292,7 +292,7 @@ onMounted(loadData)
             <thead>
               <tr>
                 <th>#</th>
-                <th>เจ้าหน้าที่</th>
+                <th>ยศ-ชื่อ สกุล</th>
                 <th>วันที่เริ่ม</th>
                 <th>วันที่สิ้นสุด</th>
                 <th>เหตุผล</th>
