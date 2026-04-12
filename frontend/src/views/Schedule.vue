@@ -247,10 +247,10 @@ onMounted(async () => {
             class="cal-entry"
             :title="entry.officer_name + (entry.officer_duty ? ' - ' + entry.officer_duty : '')"
           >
-            <span v-if="entry.officer_duty == 'นายทหารเวร'">🧑‍✈️ {{ entry.officer_name }}</span>
-            <span v-if="entry.officer_duty == 'นายทหารเวร (หญิง)'">👮‍♀️ {{ entry.officer_name }}</span>
-            <span v-if="entry.officer_duty == 'เสมียนเวร'">📋 {{ entry.officer_name }}</span>
-            <span v-if="entry.officer_duty == 'เวรประชาสัมพันธ์'">📢 {{ entry.officer_name }}</span>
+            <span v-if="entry.officer_duty == 'นายทหารเวร'">🧑‍✈️ {{ entry.officer_name.split(" ", 2).join(" ") }}</span>
+            <span v-if="entry.officer_duty == 'นายทหารเวร (หญิง)'">👮‍♀️ {{ entry.officer_name.split(" ", 2).join(" ") }}</span>
+            <span v-if="entry.officer_duty == 'เสมียนเวร'">📋 {{ entry.officer_name.split(" ", 2).join(" ") }}</span>
+            <span v-if="entry.officer_duty == 'เวรประชาสัมพันธ์'">📢 {{ entry.officer_name.split(" ", 2).join(" ") }}</span>
             <button class="entry-remove" @click="removeEntry(dayObj.dateStr, entry.officer_id, entry.officer_duty)" title="ลบ">✕</button>
             </div>
           </div>
