@@ -10,6 +10,7 @@ const success = ref(null)
 
 const showModal = ref(false)
 const form = ref({
+  request_type: 'exchange',
   requester_id: '',
   requester_date: '',
   target_id: '',
@@ -22,6 +23,11 @@ const currentMonth = new Date().getMonth() + 1
 
 const requesterDuties = ref([])
 const targetDuties = ref([])
+
+const requestTypeLabels = {
+  exchange: 'แลกเวร',
+  represent: 'แทนเวร',
+}
 
 const statusLabels = {
   pending: 'รอดำเนินการ',
@@ -77,8 +83,15 @@ async function onTargetChange() {
   }
 }
 
-function openCreate() {
-  form.value = { requester_id: '', requester_date: '', target_id: '', target_date: '', reason: '' }
+function openCreate(type = 'exchange') {
+  form.value = {
+    request_type: type,
+    requester_id: '',
+    requester_date: '',
+    target_id: '',
+    target_date: '',
+    reason: '',
+  }
   requesterDuties.value = []
   targetDuties.value = []
   showModal.value = true
@@ -99,15 +112,18 @@ async function submitExchange() {
     if (!requester || !target) return
 
     await exchangeService.create({
+      request_type: form.value.request_type,
       requester_id: requester._id,
       requester_name: `${requester.rank} ${requester.name}`,
       requester_date: form.value.requester_date,
       target_id: target._id,
       target_name: `${target.rank} ${target.name}`,
-      target_date: form.value.target_date,
+      target_date: form.value.request_type === 'exchange' ? form.value.target_date : null,
       reason: form.value.reason,
     })
-    success.value = 'ส่งคำขอเปลี่ยนเวรสำเร็จ'
+    success.value = form.value.request_type === 'represent'
+      ? 'ส่งคำขอคนแทนเวรสำเร็จ'
+      : 'ส่งคำขอเปลี่ยนเวรสำเร็จ'
     closeModal()
     await loadData()
     setTimeout(() => (success.value = null), 3000)
@@ -119,8 +135,11 @@ async function submitExchange() {
 async function approveExchange(id) {
   if (!confirm('ยืนยันการอนุมัติคำขอนี้?')) return
   try {
+    const item = exchanges.value.find(x => x._id === id)
     await exchangeService.updateStatus(id, 'approved', '')
-    success.value = 'อนุมัติคำขอสำเร็จ ระบบจะสลับเวรในตารางโดยอัตโนมัติ'
+    success.value = item?.request_type === 'represent'
+      ? 'อนุมัติคำขอสำเร็จ ระบบจะมอบหมายเวรให้ผู้แทนโดยไม่สลับเวร'
+      : 'อนุมัติคำขอสำเร็จ ระบบจะสลับเวรในตารางโดยอัตโนมัติ'
     await loadData()
     setTimeout(() => (success.value = null), 4000)
   } catch (e) {
@@ -165,7 +184,10 @@ onMounted(loadData)
   <div>
     <div class="page-header">
       <h1 class="page-title">🔄 คำขอเปลี่ยนเวร</h1>
-      <button class="btn btn-primary" @click="openCreate">+ ขอเปลี่ยนเวร</button>
+      <div class="flex gap-2">
+        <button class="btn btn-primary" @click="openCreate('exchange')">+ ขอแลกเวร</button>
+        <button class="btn btn-secondary" @click="openCreate('represent')">+ ขอคนแทนเวร</button>
+      </div>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -182,6 +204,7 @@ onMounted(loadData)
             <tr>
               <th>#</th>
               <th>ผู้ขอ</th>
+              <th>ประเภท</th>
               <th>วันที่ขอ</th>
               <th>สลับกับ</th>
               <th>วันที่สลับ</th>
@@ -194,9 +217,10 @@ onMounted(loadData)
             <tr v-for="(exch, idx) in exchanges" :key="exch._id">
               <td>{{ idx + 1 }}</td>
               <td><strong>{{ exch.requester_name }}</strong></td>
+              <td>{{ requestTypeLabels[exch.request_type || 'exchange'] }}</td>
               <td>{{ formatDate(exch.requester_date) }}</td>
               <td>{{ exch.target_name }}</td>
-              <td>{{ formatDate(exch.target_date) }}</td>
+              <td>{{ exch.request_type === 'represent' ? '-' : formatDate(exch.target_date) }}</td>
               <td>{{ exch.reason || '-' }}</td>
               <td>
                 <span class="badge" :class="statusClass[exch.status]">
@@ -225,7 +249,7 @@ onMounted(loadData)
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
         <div class="modal-header">
-          <h3>🔄 ขอเปลี่ยนเวร</h3>
+          <h3>{{ form.request_type === 'represent' ? '👥 ขอคนแทนเวร' : '🔄 ขอแลกเวร' }}</h3>
           <button class="close-btn" @click="closeModal">✕</button>
         </div>
         <div class="alert alert-info">
@@ -259,7 +283,9 @@ onMounted(loadData)
 
           <!-- Target -->
           <div>
-            <h4 style="margin-bottom:0.5rem;color:#2e7d32">ขอสลับกับ</h4>
+            <h4 style="margin-bottom:0.5rem;color:#2e7d32">
+              {{ form.request_type === 'represent' ? 'เปลี่ยนเป็น' : 'ขอสลับกับ' }}
+            </h4>
             <div class="form-group">
               <label>เจ้าหน้าที่ *</label>
               <select v-model="form.target_id" @change="onTargetChange">
@@ -269,7 +295,7 @@ onMounted(loadData)
                 </option>
               </select>
             </div>
-            <div class="form-group">
+            <div v-if="form.request_type === 'exchange'" class="form-group">
               <label>วันที่ขอสลับ *</label>
               <select v-model="form.target_date" :disabled="!targetDuties.length">
                 <option value="">{{ targetDuties.length ? '-- เลือกวัน --' : 'ไม่พบเวรในเดือนนี้' }}</option>
@@ -278,6 +304,9 @@ onMounted(loadData)
               <div v-if="form.target_id && !targetDuties.length" class="text-muted mt-1" style="font-size:0.8rem">
                 เจ้าหน้าที่นี้ไม่มีเวรในเดือนปัจจุบัน หรือยังไม่ได้จัดตาราง
               </div>
+            </div>
+            <div v-else class="text-muted mt-1" style="font-size:0.8rem">
+              ผู้แทนเวรจะถูกมอบหมายให้รับเวรในวันที่ผู้ขอ โดยไม่มีการสลับเวรกลับ
             </div>
           </div>
         </div>
@@ -288,11 +317,8 @@ onMounted(loadData)
         </div>
 
         <div class="flex gap-2 mt-2">
-          <button
-            class="btn btn-primary"
-            @click="submitExchange"
-            :disabled="!form.requester_id || !form.requester_date || !form.target_id || !form.target_date"
-          >
+          <button class="btn btn-primary" @click="submitExchange"
+            :disabled="!form.requester_id || !form.requester_date || !form.target_id || (form.request_type === 'exchange' && !form.target_date)">
             📤 ส่งคำขอ
           </button>
           <button class="btn btn-secondary" @click="closeModal">ยกเลิก</button>
