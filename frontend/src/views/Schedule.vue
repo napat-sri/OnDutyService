@@ -49,17 +49,52 @@ const eligibleOfficers = computed(() => {
   return officers.value.filter(o => (o.duty_types || []).includes(entryForm.value.officer_duty))
 })
 
+function getApiErrorMessage(e) {
+  const detail = e?.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d) => {
+        const loc = Array.isArray(d?.loc) ? d.loc.join('.') : 'body'
+        return `${loc}: ${d?.msg || 'invalid value'}`
+      })
+      .join(', ')
+  }
+  return 'เกิดข้อผิดพลาด'
+}
+
+function normalizeScheduleEntries(entries) {
+  return (entries || [])
+    .map((entry) => {
+      const officerId = entry?.officer_id || ''
+      const date = entry?.date || ''
+      if (!officerId || !date) return null
+
+      const officer = officers.value.find((o) => o._id === officerId)
+      return {
+        officer_id: officerId,
+        officer_name: entry?.officer_name || (officer ? `${officer.rank} ${officer.name}` : 'ไม่ทราบชื่อ'),
+        officer_duty: entry?.officer_duty || 'ไม่ระบุ',
+        date,
+      }
+    })
+    .filter(Boolean)
+}
+
 async function loadSchedule() {
   loadingSchedule.value = true
   error.value = null
   try {
     const res = await scheduleService.get(selectedYear.value, selectedMonth.value)
-    currentSchedule.value = res.data
+    currentSchedule.value = {
+      ...res.data,
+      entries: normalizeScheduleEntries(res.data?.entries || []),
+    }
   } catch (e) {
     if (e.response?.status === 404) {
       currentSchedule.value = null
     } else {
-      error.value = 'เกิดข้อผิดพลาดในการโหลดข้อมูล'
+      error.value = getApiErrorMessage(e)
     }
   } finally {
     loadingSchedule.value = false
@@ -73,6 +108,7 @@ async function createSchedule() {
       month: selectedMonth.value,
       entries: [],
     })
+    console.log('Created schedule', res)
     currentSchedule.value = res.data
     success.value = 'สร้างตารางเวรสำเร็จ'
     setTimeout(() => (success.value = null), 3000)
@@ -96,23 +132,28 @@ async function addEntry() {
     officer_duty: entryForm.value.officer_duty,
     date: entryForm.value.date,
   }
-  const updatedEntries = [...(currentSchedule.value.entries || []), newEntry]
+  console.log('Adding entry', newEntry)
+  const updatedEntries = [
+    ...normalizeScheduleEntries(currentSchedule.value?.entries || []),
+    newEntry,
+  ]
   try {
     const res = await scheduleService.update(selectedYear.value, selectedMonth.value, {
       entries: updatedEntries,
     })
+    console.log('Updated schedule', res)
     currentSchedule.value = res.data
     showAddEntryModal.value = false
     success.value = 'เพิ่มเวรสำเร็จ'
     setTimeout(() => (success.value = null), 3000)
   } catch (e) {
-    error.value = e.response?.data?.detail || 'เกิดข้อผิดพลาด'
+    error.value = getApiErrorMessage(e)
   }
 }
 
 async function removeEntry(dateStr, officerId, officerDuty) {
   if (!confirm('ยืนยันการลบเวรนี้?')) return
-  const updatedEntries = currentSchedule.value.entries.filter(
+  const updatedEntries = normalizeScheduleEntries(currentSchedule.value?.entries || []).filter(
     e => !(e.date === dateStr && e.officer_id === officerId && e.officer_duty === officerDuty)
   )
   try {
@@ -123,7 +164,7 @@ async function removeEntry(dateStr, officerId, officerDuty) {
     success.value = 'ลบเวรสำเร็จ'
     setTimeout(() => (success.value = null), 3000)
   } catch (e) {
-    error.value = e.response?.data?.detail || 'เกิดข้อผิดพลาด'
+    error.value = getApiErrorMessage(e)
   }
 }
 
@@ -206,7 +247,11 @@ onMounted(async () => {
             class="cal-entry"
             :title="entry.officer_name + (entry.officer_duty ? ' - ' + entry.officer_duty : '')"
           >
-            <span>{{ entry.officer_duty ? '🪖 ' + entry.officer_duty + ': ' : '👮 ' }}{{ entry.officer_name }}</span>
+            <span v-if="entry.officer_duty == 'นายทหารเวร'">🧑‍✈️ {{ entry.officer_name.split(" ", 2).join(" ") }}</span>
+            <span v-else-if="entry.officer_duty == 'นายทหารเวร (หญิง)'">👮‍♀️ {{ entry.officer_name.split(" ", 2).join(" ") }}</span>
+            <span v-else-if="entry.officer_duty == 'เสมียนเวร'">📋 {{ entry.officer_name.split(" ", 2).join(" ") }}</span>
+            <span v-else-if="entry.officer_duty == 'เวรประชาสัมพันธ์'">📢 {{ entry.officer_name.split(" ", 2).join(" ") }}</span>
+            <span v-else>👤 {{ entry.officer_name.split(" ", 2).join(" ") }}{{ entry.officer_duty ? ' - ' + entry.officer_duty : '' }}</span>
             <button class="entry-remove" @click="removeEntry(dayObj.dateStr, entry.officer_id, entry.officer_duty)" title="ลบ">✕</button>
             </div>
           </div>
@@ -242,7 +287,7 @@ onMounted(async () => {
           </small>
         </div>
         <div class="flex gap-2 mt-2">
-          <button class="btn btn-primary" @click="addEntry" :disabled="!entryForm.officer_id || !entryForm.officer_duty">💾 เพิ่มเวร</button>
+          <button class="btn btn-primary" @click="addEntry" :disabled="!entryForm.officer_id">💾 เพิ่มเวร</button>
           <button class="btn btn-secondary" @click="showAddEntryModal = false">ยกเลิก</button>
         </div>
       </div>
@@ -334,8 +379,8 @@ onMounted(async () => {
 
 .add-entry-btn {
   position: absolute;
-  bottom: 3px;
-  right: 3px;
+  top: 4px;
+  right: 4px;
   background: none;
   border: 1px dashed #90a4ae;
   color: #90a4ae;

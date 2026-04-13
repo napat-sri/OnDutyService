@@ -10,7 +10,13 @@ class ExchangeStatus(str, Enum):
     rejected = "rejected"
 
 
+class ExchangeRequestType(str, Enum):
+    exchange = "exchange"
+    represent = "represent"
+
+
 class ExchangeBase(BaseModel):
+    request_type: ExchangeRequestType = ExchangeRequestType.exchange
     requester_id: str
     requester_name: str
     requester_date: str  # ISO date string YYYY-MM-DD

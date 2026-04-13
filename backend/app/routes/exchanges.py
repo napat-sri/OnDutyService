@@ -2,7 +2,12 @@ from fastapi import APIRouter, HTTPException, status
 from bson import ObjectId
 from datetime import datetime
 from ..database import get_database
-from ..models.exchange import ExchangeCreate, ExchangeUpdate, ExchangeStatus
+from ..models.exchange import (
+    ExchangeCreate,
+    ExchangeUpdate,
+    ExchangeStatus,
+    ExchangeRequestType,
+)
 
 router = APIRouter(prefix="/exchanges", tags=["exchanges"])
 
@@ -10,6 +15,7 @@ router = APIRouter(prefix="/exchanges", tags=["exchanges"])
 def exchange_helper(exchange) -> dict:
     return {
         "_id": str(exchange["_id"]),
+        "request_type": exchange.get("request_type", ExchangeRequestType.exchange),
         "requester_id": exchange["requester_id"],
         "requester_name": exchange["requester_name"],
         "requester_date": exchange["requester_date"],
@@ -70,9 +76,7 @@ async def update_exchange_status(exchange_id: str, data: ExchangeUpdate):
     if data.admin_note is not None:
         update_data["admin_note"] = data.admin_note
 
-    await db.exchanges.update_one(
-        {"_id": ObjectId(exchange_id)}, {"$set": update_data}
-    )
+    await db.exchanges.update_one({"_id": ObjectId(exchange_id)}, {"$set": update_data})
 
     # If approved, swap the duty entries in the schedule
     if data.status == ExchangeStatus.approved:
@@ -83,11 +87,36 @@ async def update_exchange_status(exchange_id: str, data: ExchangeUpdate):
 
 
 async def _apply_exchange_to_schedule(db, exchange: dict):
-    """Swap the two officers' duty dates in the schedule."""
+    """Apply approved exchange request to schedule.
+
+    - exchange: two-way swap between requester_date and target_date
+    - represent: one-way transfer of requester_date to target officer
+    """
     requester_date = exchange["requester_date"]
-    target_date = exchange["target_date"]
     requester_id = exchange["requester_id"]
     target_id = exchange["target_id"]
+    request_type = exchange.get("request_type", ExchangeRequestType.exchange)
+
+    if request_type == ExchangeRequestType.represent:
+        r_year, r_month, _ = requester_date.split("-")
+        await db.schedules.update_one(
+            {
+                "year": int(r_year),
+                "month": int(r_month),
+                "entries.date": requester_date,
+                "entries.officer_id": requester_id,
+            },
+            {
+                "$set": {
+                    "entries.$.officer_id": target_id,
+                    "entries.$.officer_name": exchange["target_name"],
+                    "updated_at": datetime.utcnow(),
+                }
+            },
+        )
+        return
+
+    target_date = exchange["target_date"]
 
     # Parse year/month from dates
     r_year, r_month, _ = requester_date.split("-")
@@ -95,17 +124,29 @@ async def _apply_exchange_to_schedule(db, exchange: dict):
 
     for year, month, date_str, new_officer_id, new_officer_name, old_officer_id in [
         (
-            int(r_year), int(r_month), requester_date,
-            target_id, exchange["target_name"], requester_id,
+            int(r_year),
+            int(r_month),
+            requester_date,
+            target_id,
+            exchange["target_name"],
+            requester_id,
         ),
         (
-            int(t_year), int(t_month), target_date,
-            requester_id, exchange["requester_name"], target_id,
+            int(t_year),
+            int(t_month),
+            target_date,
+            requester_id,
+            exchange["requester_name"],
+            target_id,
         ),
     ]:
         await db.schedules.update_one(
-            {"year": year, "month": month, "entries.date": date_str,
-             "entries.officer_id": old_officer_id},
+            {
+                "year": year,
+                "month": month,
+                "entries.date": date_str,
+                "entries.officer_id": old_officer_id,
+            },
             {
                 "$set": {
                     "entries.$.officer_id": new_officer_id,

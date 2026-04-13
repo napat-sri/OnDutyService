@@ -24,6 +24,30 @@ const departments = ['บก.ศซว.ทอ.', 'กมซ.ศซว.ทอ.', 
 
 const tabs = computed(() => ['ทั้งหมด', ...dutyTypes.value])
 
+const dutyBadgePalette = [
+  { background: '#e3f2fd', color: '#1565c0', borderColor: '#90caf9' },
+  { background: '#e8f5e9', color: '#2e7d32', borderColor: '#a5d6a7' },
+  { background: '#fff3e0', color: '#ef6c00', borderColor: '#ffcc80' },
+  { background: '#f3e5f5', color: '#7b1fa2', borderColor: '#ce93d8' },
+  { background: '#e0f2f1', color: '#00695c', borderColor: '#80cbc4' },
+  { background: '#fbe9e7', color: '#d84315', borderColor: '#ffab91' },
+  { background: '#f1f8e9', color: '#558b2f', borderColor: '#c5e1a5' },
+  { background: '#ede7f6', color: '#4527a0', borderColor: '#b39ddb' },
+]
+
+function hashDuty(duty) {
+  return [...duty].reduce((sum, ch) => sum + ch.charCodeAt(0), 0)
+}
+
+function dutyBadgeStyle(duty) {
+  const idx = hashDuty(duty) % dutyBadgePalette.length
+  return {
+    background: dutyBadgePalette[idx].background,
+    color: dutyBadgePalette[idx].color,
+    border: `1px solid ${dutyBadgePalette[idx].borderColor}`,
+  }
+}
+
 const filteredOfficers = computed(() => {
   if (activeTab.value === 'ทั้งหมด') return officers.value
   return officers.value.filter(o => (o.duty_types || []).includes(activeTab.value))
@@ -107,13 +131,8 @@ onMounted(loadOfficers)
 
     <!-- Duty type tabs -->
     <div class="duty-tabs">
-      <button
-        v-for="tab in tabs"
-        :key="tab"
-        class="duty-tab"
-        :class="{ active: activeTab === tab }"
-        @click="activeTab = tab"
-      >
+      <button v-for="tab in tabs" :key="tab" class="duty-tab" :class="{ active: activeTab === tab }"
+        @click="activeTab = tab">
         {{ tab }}
         <span class="tab-count">
           {{
@@ -153,11 +172,8 @@ onMounted(loadOfficers)
               <td>{{ officer.department || '-' }}</td>
               <td>
                 <div class="duty-badges">
-                  <span
-                    v-for="dt in (officer.duty_types || [])"
-                    :key="dt"
-                    class="duty-badge"
-                  >{{ dt }}</span>
+                  <span v-for="dt in (officer.duty_types || [])" :key="dt" class="duty-badge"
+                    :style="dutyBadgeStyle(dt)">{{ dt }}</span>
                   <span v-if="!(officer.duty_types || []).length" class="text-muted">-</span>
                 </div>
               </td>
@@ -208,11 +224,7 @@ onMounted(loadOfficers)
             <label>หน้าที่เวร</label>
             <div class="checkbox-group">
               <label v-for="dt in dutyTypes" :key="dt" class="checkbox-label">
-                <input
-                  type="checkbox"
-                  :value="dt"
-                  v-model="form.duty_types"
-                />
+                <input type="checkbox" :value="dt" v-model="form.duty_types" />
                 {{ dt }}
               </label>
             </div>
@@ -285,8 +297,7 @@ onMounted(loadOfficers)
 }
 
 .duty-badge {
-  background: #e3f2fd;
-  color: #1565c0;
+  border: 1px solid transparent;
   border-radius: 4px;
   padding: 2px 6px;
   font-size: 0.75rem;
