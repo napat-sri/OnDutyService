@@ -81,9 +81,10 @@ onMounted(async () => {
         <div v-else class="duty-list">
           <div v-for="entry in dutyToday" :key="entry.officer_id" class="duty-item">
             <span class="duty-icon" v-if="entry.officer_duty == 'นายทหารเวร'">🧑‍✈️</span>
-            <span class="duty-icon" v-if="entry.officer_duty == 'นายทหารเวร (หญิง)'">👮‍♀️</span>
-            <span class="duty-icon" v-if="entry.officer_duty == 'เสมียนเวร'">📋</span>
-            <span class="duty-icon" v-if="entry.officer_duty == 'เวรประชาสัมพันธ์'">📢</span>
+            <span class="duty-icon" v-else-if="entry.officer_duty == 'นายทหารเวร (หญิง)'">👮‍♀️</span>
+            <span class="duty-icon" v-else-if="entry.officer_duty == 'เสมียนเวร'">📋</span>
+            <span class="duty-icon" v-else-if="entry.officer_duty == 'เวรประชาสัมพันธ์'">📢</span>
+            <span class="duty-icon" v-else>📌</span>
             <div>
               <div class="duty-name">{{ entry.officer_name }}</div>
               <div class="text-muted" style="font-size:0.85rem">{{ entry.date }}</div>
