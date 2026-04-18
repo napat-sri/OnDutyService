@@ -233,7 +233,7 @@ onMounted(loadData)
           <table class="gantt-table">
             <thead>
               <tr>
-                <th class="gantt-officer-col">ยศ-ชื่อ สกุล</th>
+                <th class="gantt-officer-col">ยศ-ชื่อ-สกุล</th>
                 <th
                   v-for="d in daysInMonth"
                   :key="d.dateStr"
@@ -292,7 +292,7 @@ onMounted(loadData)
             <thead>
               <tr>
                 <th>#</th>
-                <th>ยศ-ชื่อ สกุล</th>
+                <th>ยศ-ชื่อ-สกุล</th>
                 <th>วันที่เริ่ม</th>
                 <th>วันที่สิ้นสุด</th>
                 <th>เหตุผล</th>

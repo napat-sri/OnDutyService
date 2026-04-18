@@ -8,6 +8,9 @@ from ..models.exchange import (
     ExchangeStatus,
     ExchangeRequestType,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/exchanges", tags=["exchanges"])
 
@@ -140,22 +143,45 @@ async def _apply_exchange_to_schedule(db, exchange: dict):
             target_id,
         ),
     ]:
-        await db.schedules.update_one(
-            {
-                "year": year,
-                "month": month,
-                "entries.date": date_str,
-                "entries.officer_id": old_officer_id,
-            },
+        result = await db.schedules.update_one(
+            {"year": year, "month": month},
             {
                 "$set": {
-                    "entries.$.officer_id": new_officer_id,
-                    "entries.$.officer_name": new_officer_name,
+                    "entries.$[e].officer_id": new_officer_id,
+                    "entries.$[e].officer_name": new_officer_name,
                     "updated_at": datetime.utcnow(),
                 }
             },
+            array_filters=[{"e.date": date_str, "e.officer_id": old_officer_id}],
         )
 
+        logger.info(
+            "swap update result year=%s month=%s date=%s old=%s new=%s matched=%s modified=%s",
+            year,
+            month,
+            date_str,
+            old_officer_id,
+            new_officer_id,
+            result.matched_count,
+            result.modified_count,
+        )
+
+        if result.matched_count == 0:
+            logger.warning(
+                "swap update matched 0 schedule docs for year=%s month=%s date=%s old_officer_id=%s",
+                year,
+                month,
+                date_str,
+                old_officer_id,
+            )
+        elif result.modified_count == 0:
+            logger.warning(
+                "swap update modified 0 entries for year=%s month=%s date=%s old_officer_id=%s",
+                year,
+                month,
+                date_str,
+                old_officer_id,
+            )
 
 @router.delete("/{exchange_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_exchange(exchange_id: str):

@@ -204,11 +204,11 @@ onMounted(loadData)
             <tr>
               <th>#</th>
               <th>ผู้ขอ</th>
-              <th>ประเภท</th>
+              <!-- <th>ประเภท</th> -->
               <th>วันที่ขอ</th>
               <th>สลับกับ</th>
               <th>วันที่สลับ</th>
-              <th>เหตุผล</th>
+              <!-- <th>เหตุผล</th> -->
               <th>สถานะ</th>
               <th>จัดการ</th>
             </tr>
@@ -217,11 +217,11 @@ onMounted(loadData)
             <tr v-for="(exch, idx) in exchanges" :key="exch._id">
               <td>{{ idx + 1 }}</td>
               <td><strong>{{ exch.requester_name }}</strong></td>
-              <td>{{ requestTypeLabels[exch.request_type || 'exchange'] }}</td>
+              <!-- <td>{{ requestTypeLabels[exch.request_type || 'exchange'] }}</td> -->
               <td>{{ formatDate(exch.requester_date) }}</td>
               <td>{{ exch.target_name }}</td>
               <td>{{ exch.request_type === 'represent' ? '-' : formatDate(exch.target_date) }}</td>
-              <td>{{ exch.reason || '-' }}</td>
+              <!-- <td>{{ exch.reason || '-' }}</td> -->
               <td>
                 <span class="badge" :class="statusClass[exch.status]">
                   {{ statusLabels[exch.status] }}
