@@ -169,7 +169,17 @@ async def _apply_exchange_to_schedule(db, exchange: dict):
 
         if result.matched_count == 0:
             logger.warning(
-                "swap update matched 0 docs for date=%s old_officer_id=%s",
+                "swap update matched 0 schedule docs for year=%s month=%s date=%s old_officer_id=%s",
+                year,
+                month,
+                date_str,
+                old_officer_id,
+            )
+        elif result.modified_count == 0:
+            logger.warning(
+                "swap update modified 0 entries for year=%s month=%s date=%s old_officer_id=%s",
+                year,
+                month,
                 date_str,
                 old_officer_id,
             )
