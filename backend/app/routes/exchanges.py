@@ -126,7 +126,6 @@ async def _apply_exchange_to_schedule(db, exchange: dict):
     r_year, r_month, _ = requester_date.split("-")
     t_year, t_month, _ = target_date.split("-")
 
-    # for year, month, date_str, new_officer_id, new_officer_name, old_officer_id in [
     for year, month, date_str, new_officer_id, new_officer_name, old_officer_id in [
         (
             int(r_year),
