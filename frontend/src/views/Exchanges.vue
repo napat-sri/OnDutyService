@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { exchangeService, officerService, scheduleService } from '../services/api'
+import { formatThaiDate, formatThaiYear } from '../utils/thaiDate'
 
 const exchanges = ref([])
 const officers = ref([])
@@ -172,9 +173,7 @@ async function deleteExchange(id) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+  return formatThaiDate(dateStr)
 }
 
 onMounted(loadData)
@@ -253,7 +252,7 @@ onMounted(loadData)
           <button class="close-btn" @click="closeModal">✕</button>
         </div>
         <div class="alert alert-info">
-          ระบบจะค้นหาเวรของเดือนปัจจุบัน ({{ currentMonth }}/{{ currentYear }}) สำหรับแต่ละเจ้าหน้าที่
+          ระบบจะค้นหาเวรของเดือนปัจจุบัน ({{ currentMonth }}/{{ formatThaiYear(currentYear) }}) สำหรับแต่ละเจ้าหน้าที่
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
@@ -273,7 +272,7 @@ onMounted(loadData)
               <label>วันที่ขอสลับ *</label>
               <select v-model="form.requester_date" :disabled="!requesterDuties.length">
                 <option value="">{{ requesterDuties.length ? '-- เลือกวัน --' : 'ไม่พบเวรในเดือนนี้' }}</option>
-                <option v-for="d in requesterDuties" :key="d.date" :value="d.date">{{ d.date }}</option>
+                <option v-for="d in requesterDuties" :key="d.date" :value="d.date">{{ formatDate(d.date) }}</option>
               </select>
               <div v-if="form.requester_id && !requesterDuties.length" class="text-muted mt-1" style="font-size:0.8rem">
                 เจ้าหน้าที่นี้ไม่มีเวรในเดือนปัจจุบัน หรือยังไม่ได้จัดตาราง
@@ -299,7 +298,7 @@ onMounted(loadData)
               <label>วันที่ขอสลับ *</label>
               <select v-model="form.target_date" :disabled="!targetDuties.length">
                 <option value="">{{ targetDuties.length ? '-- เลือกวัน --' : 'ไม่พบเวรในเดือนนี้' }}</option>
-                <option v-for="d in targetDuties" :key="d.date" :value="d.date">{{ d.date }}</option>
+                <option v-for="d in targetDuties" :key="d.date" :value="d.date">{{ formatDate(d.date) }}</option>
               </select>
               <div v-if="form.target_id && !targetDuties.length" class="text-muted mt-1" style="font-size:0.8rem">
                 เจ้าหน้าที่นี้ไม่มีเวรในเดือนปัจจุบัน หรือยังไม่ได้จัดตาราง

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { officerService, absenceService } from '../services/api'
+import { formatThaiDate, formatThaiYear, toIsoDateString } from '../utils/thaiDate'
 
 const officers = ref([])
 const dutyTypes = ref([])
@@ -42,17 +43,14 @@ const daysInMonth = computed(() => {
   return days
 })
 
-// Today's date in local time as YYYY-MM-DD
 const todayStr = computed(() => {
-  const t = new Date()
-  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
+  return toIsoDateString()
 })
 
 // Absence lookup map: `${officerId}:${dateStr}` -> absence object
 const absenceLookup = computed(() => {
   const map = {}
   for (const a of absences.value) {
-    // Iterate all days of the absence range
     const start = new Date(a.start_date + 'T00:00:00')
     const end = new Date(a.end_date + 'T00:00:00')
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -62,6 +60,10 @@ const absenceLookup = computed(() => {
   }
   return map
 })
+
+function formatDate(dateStr) {
+  return formatThaiDate(dateStr)
+}
 
 function getAbsenceForDate(officerId, dateStr) {
   return absenceLookup.value[`${officerId}:${dateStr}`]
@@ -183,7 +185,7 @@ onMounted(loadData)
         <div class="form-group" style="margin:0">
           <label>ปี</label>
           <select v-model="selectedYear" @change="loadAbsences">
-            <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+            <option v-for="y in years" :key="y" :value="y">{{ formatThaiYear(y) }}</option>
           </select>
         </div>
         <div class="form-group" style="margin:0">
@@ -198,16 +200,11 @@ onMounted(loadData)
 
     <!-- Duty type tabs -->
     <div class="duty-tabs">
-      <button
-        v-for="dt in dutyTypes"
-        :key="dt"
-        class="duty-tab"
-        :class="{ active: activeTab === dt }"
-        @click="activeTab = dt"
-      >
+      <button v-for="dt in dutyTypes" :key="dt" class="duty-tab" :class="{ active: activeTab === dt }"
+        @click="activeTab = dt">
         {{ dt }}
         <span class="tab-count">
-          {{ officers.filter(o => (o.duty_types || []).includes(dt)).length }}
+          {{officers.filter(o => (o.duty_types || []).includes(dt)).length}}
         </span>
       </button>
     </div>
@@ -221,7 +218,7 @@ onMounted(loadData)
       <div class="card" style="padding:0;overflow:hidden">
         <div class="gantt-header-row">
           <span class="gantt-title">
-            {{ months.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }}
+            {{months.find(m => m.value === selectedMonth)?.label}} {{ formatThaiYear(selectedYear) }}
           </span>
           <span class="gantt-legend">
             <span class="legend-dot available"></span> พร้อม
@@ -234,12 +231,8 @@ onMounted(loadData)
             <thead>
               <tr>
                 <th class="gantt-officer-col">ยศ-ชื่อ-สกุล</th>
-                <th
-                  v-for="d in daysInMonth"
-                  :key="d.dateStr"
-                  class="gantt-day-col"
-                  :class="{ weekend: d.weekday === 0 || d.weekday === 6 }"
-                >
+                <th v-for="d in daysInMonth" :key="d.dateStr" class="gantt-day-col"
+                  :class="{ weekend: d.weekday === 0 || d.weekday === 6 }">
                   <div class="day-num">{{ d.day }}</div>
                   <div class="day-name">{{ dayNames[d.weekday] }}</div>
                 </th>
@@ -253,27 +246,17 @@ onMounted(loadData)
                     <span class="officer-name">{{ officer.name }}</span>
                   </div>
                 </td>
-                <td
-                  v-for="d in daysInMonth"
-                  :key="d.dateStr"
-                  class="gantt-cell"
-                  :class="{
-                    'weekend': d.weekday === 0 || d.weekday === 6,
-                    'absent': !!getAbsenceForDate(officer._id, d.dateStr),
-                    'today': d.dateStr === todayStr,
-                  }"
-                  :title="getAbsenceForDate(officer._id, d.dateStr)?.reason"
-                  @click="
+                <td v-for="d in daysInMonth" :key="d.dateStr" class="gantt-cell" :class="{
+                  'weekend': d.weekday === 0 || d.weekday === 6,
+                  'absent': !!getAbsenceForDate(officer._id, d.dateStr),
+                  'today': d.dateStr === todayStr,
+                }" :title="getAbsenceForDate(officer._id, d.dateStr)?.reason" @click="
                     getAbsenceForDate(officer._id, d.dateStr)
                       ? openEditAbsence(getAbsenceForDate(officer._id, d.dateStr))
                       : openAddAbsence(officer._id, d.dateStr)
-                  "
-                >
-                  <span
-                    v-if="getAbsenceForDate(officer._id, d.dateStr)"
-                    class="absent-dot"
-                    :title="getAbsenceForDate(officer._id, d.dateStr).reason"
-                  >✕</span>
+                    ">
+                  <span v-if="getAbsenceForDate(officer._id, d.dateStr)" class="absent-dot"
+                    :title="getAbsenceForDate(officer._id, d.dateStr).reason">✕</span>
                 </td>
               </tr>
             </tbody>
@@ -303,8 +286,8 @@ onMounted(loadData)
               <tr v-for="(absence, idx) in absenceList" :key="absence._id">
                 <td>{{ idx + 1 }}</td>
                 <td>{{ absence.officer_name || absence.officer_id }}</td>
-                <td>{{ absence.start_date }}</td>
-                <td>{{ absence.end_date }}</td>
+                <td>{{ formatDate(absence.start_date) }}</td>
+                <td>{{ formatDate(absence.end_date) }}</td>
                 <td>{{ absence.reason }}</td>
                 <td>
                   <div class="flex gap-2">
@@ -346,15 +329,11 @@ onMounted(loadData)
           </div>
           <div class="form-group">
             <label>เหตุผล *</label>
-            <input
-              type="text"
-              v-model="form.reason"
-              required
-              placeholder="เช่น ราชการ, ศึกษา"
-            />
+            <input type="text" v-model="form.reason" required placeholder="เช่น ราชการ, ศึกษา" />
           </div>
           <div class="flex gap-2 mt-2">
-            <button type="submit" class="btn btn-primary" :disabled="!form.officer_id || !form.start_date || !form.end_date || !form.reason">
+            <button type="submit" class="btn btn-primary"
+              :disabled="!form.officer_id || !form.start_date || !form.end_date || !form.reason">
               💾 บันทึก
             </button>
             <button type="button" class="btn btn-secondary" @click="closeModal">ยกเลิก</button>
@@ -366,8 +345,16 @@ onMounted(loadData)
 </template>
 
 <style scoped>
-.controls { display: flex; gap: 1.5rem; align-items: flex-end; flex-wrap: wrap; }
-.controls .form-group { min-width: 140px; }
+.controls {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.controls .form-group {
+  min-width: 140px;
+}
 
 .duty-tabs {
   display: flex;
@@ -390,7 +377,10 @@ onMounted(loadData)
   gap: 0.4rem;
 }
 
-.duty-tab:hover { border-color: #3949ab; color: #1a237e; }
+.duty-tab:hover {
+  border-color: #3949ab;
+  color: #1a237e;
+}
 
 .duty-tab.active {
   background: #3949ab;
@@ -399,7 +389,7 @@ onMounted(loadData)
 }
 
 .tab-count {
-  background: rgba(255,255,255,0.3);
+  background: rgba(255, 255, 255, 0.3);
   border-radius: 10px;
   padding: 0 0.4rem;
   font-size: 0.75rem;
@@ -422,7 +412,11 @@ onMounted(loadData)
   border-bottom: 1px solid #c5cae9;
 }
 
-.gantt-title { font-weight: 700; color: #1a237e; font-size: 1rem; }
+.gantt-title {
+  font-weight: 700;
+  color: #1a237e;
+  font-size: 1rem;
+}
 
 .gantt-legend {
   display: flex;
@@ -440,9 +434,20 @@ onMounted(loadData)
   margin-right: 2px;
 }
 
-.legend-dot.available { background: #e8f5e9; border: 1px solid #a5d6a7; }
-.legend-dot.absent { background: #ffcdd2; border: 1px solid #ef9a9a; }
-.legend-dot.weekend { background: #f5f5f5; border: 1px solid #e0e0e0; }
+.legend-dot.available {
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+}
+
+.legend-dot.absent {
+  background: #ffcdd2;
+  border: 1px solid #ef9a9a;
+}
+
+.legend-dot.weekend {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+}
 
 .gantt-scroll {
   overflow-x: auto;
@@ -481,10 +486,21 @@ onMounted(loadData)
   width: 32px;
 }
 
-.gantt-day-col.weekend { background: #fafafa !important; color: #b0bec5; }
+.gantt-day-col.weekend {
+  background: #fafafa !important;
+  color: #b0bec5;
+}
 
-.day-num { font-weight: 700; font-size: 0.78rem; color: #37474f; }
-.day-name { font-size: 0.65rem; color: #90a4ae; }
+.day-num {
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #37474f;
+}
+
+.day-name {
+  font-size: 0.65rem;
+  color: #90a4ae;
+}
 
 .gantt-officer-cell {
   border: 1px solid #e0e0e0;
@@ -503,8 +519,15 @@ onMounted(loadData)
   gap: 1px;
 }
 
-.officer-rank { font-size: 0.7rem; color: #78909c; }
-.officer-name { font-weight: 600; color: #1a237e; }
+.officer-rank {
+  font-size: 0.7rem;
+  color: #78909c;
+}
+
+.officer-name {
+  font-weight: 600;
+  color: #1a237e;
+}
 
 .gantt-cell {
   border: 1px solid #e8eaf6;
@@ -517,11 +540,26 @@ onMounted(loadData)
   vertical-align: middle;
 }
 
-.gantt-cell:hover { background: #e3f2fd !important; }
-.gantt-cell.weekend { background: #f9f9f9; }
-.gantt-cell.absent { background: #ffcdd2; }
-.gantt-cell.absent:hover { background: #ef9a9a !important; }
-.gantt-cell.today { outline: 2px solid #3949ab; outline-offset: -2px; }
+.gantt-cell:hover {
+  background: #e3f2fd !important;
+}
+
+.gantt-cell.weekend {
+  background: #f9f9f9;
+}
+
+.gantt-cell.absent {
+  background: #ffcdd2;
+}
+
+.gantt-cell.absent:hover {
+  background: #ef9a9a !important;
+}
+
+.gantt-cell.today {
+  outline: 2px solid #3949ab;
+  outline-offset: -2px;
+}
 
 .absent-dot {
   font-size: 0.65rem;
@@ -530,7 +568,12 @@ onMounted(loadData)
   line-height: 1;
 }
 
-.section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #1a237e; }
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #1a237e;
+}
 
 td {
   padding: 0.75rem 0 0.75rem 0;

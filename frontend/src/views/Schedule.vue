@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { scheduleService, officerService } from '../services/api'
+import { formatThaiDate, formatThaiYear, toIsoDateString } from '../utils/thaiDate'
 
 const schedules = ref([])
 const officers = ref([])
@@ -197,7 +198,7 @@ onMounted(async () => {
         <div class="form-group" style="margin:0">
           <label>ปี</label>
           <select v-model="selectedYear" @change="loadSchedule">
-            <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+            <option v-for="y in years" :key="y" :value="y">{{ formatThaiYear(y) }}</option>
           </select>
         </div>
         <div class="form-group" style="margin:0">
@@ -214,7 +215,8 @@ onMounted(async () => {
     <div v-if="!loadingSchedule && !currentSchedule" class="card text-center" style="padding:3rem">
       <div style="font-size:3rem;margin-bottom:1rem">📅</div>
       <div style="font-size:1.1rem;margin-bottom:1rem;color:#546e7a">
-        ยังไม่มีตารางเวรสำหรับเดือน {{ months.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }}
+        ยังไม่มีตารางเวรสำหรับเดือน {{months.find(m => m.value === selectedMonth)?.label}} {{
+          formatThaiYear(selectedYear) }}
       </div>
       <button class="btn btn-primary" @click="createSchedule">+ สร้างตารางเวร</button>
     </div>
@@ -226,33 +228,31 @@ onMounted(async () => {
     <div v-else class="card">
       <div class="calendar-header">
         <h2 style="font-size:1.2rem;color:#1a237e">
-          📅 {{ months.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }}
+          📅 {{months.find(m => m.value === selectedMonth)?.label}} {{ formatThaiYear(selectedYear) }}
         </h2>
       </div>
       <div class="calendar-grid">
         <div v-for="day in dayNames" :key="day" class="cal-day-header">{{ day }}</div>
         <!-- empty cells for first week offset -->
-        <div v-for="i in getWeekday(calendarDays[0]?.dateStr)" :key="'empty-'+i" class="cal-cell empty"></div>
-        <div
-          v-for="dayObj in calendarDays"
-          :key="dayObj.dateStr"
-          class="cal-cell"
-          :class="{ today: dayObj.dateStr === new Date().toISOString().split('T')[0] }"
-        >
+        <div v-for="i in getWeekday(calendarDays[0]?.dateStr)" :key="'empty-' + i" class="cal-cell empty"></div>
+        <div v-for="dayObj in calendarDays" :key="dayObj.dateStr" class="cal-cell"
+          :class="{ today: dayObj.dateStr === toIsoDateString() }">
           <div class="cal-day-num">{{ dayObj.day }}</div>
           <div class="cal-entries">
-            <div
-            v-for="entry in dayObj.entries"
-            :key="entry.officer_id + entry.officer_duty"
-            class="cal-entry"
-            :title="entry.officer_name + (entry.officer_duty ? ' - ' + entry.officer_duty : '')"
-          >
-            <span v-if="entry.officer_duty == 'นายทหารเวร'">🧑‍✈️ {{ entry.officer_name.split(" ", 2).join(" ") }}</span>
-            <span v-else-if="entry.officer_duty == 'นายทหารเวร (หญิง)'">👮‍♀️ {{ entry.officer_name.split(" ", 2).join(" ") }}</span>
-            <span v-else-if="entry.officer_duty == 'เสมียนเวร'">📋 {{ entry.officer_name.split(" ", 2).join(" ") }}</span>
-            <span v-else-if="entry.officer_duty == 'เวรประชาสัมพันธ์'">📢 {{ entry.officer_name.split(" ", 2).join(" ") }}</span>
-            <span v-else>👤 {{ entry.officer_name.split(" ", 2).join(" ") }}{{ entry.officer_duty ? ' - ' + entry.officer_duty : '' }}</span>
-            <button class="entry-remove" @click="removeEntry(dayObj.dateStr, entry.officer_id, entry.officer_duty)" title="ลบ">✕</button>
+            <div v-for="entry in dayObj.entries" :key="entry.officer_id + entry.officer_duty" class="cal-entry"
+              :title="entry.officer_name + (entry.officer_duty ? ' - ' + entry.officer_duty : '')">
+              <span v-if="entry.officer_duty == 'นายทหารเวร'">🧑‍✈️ {{ entry.officer_name.split(" ", 2).join(" ")
+                }}</span>
+              <span v-else-if="entry.officer_duty == 'นายทหารเวร (หญิง)'">👮‍♀️ {{ entry.officer_name.split(" ",
+                2).join(" ") }}</span>
+              <span v-else-if="entry.officer_duty == 'เสมียนเวร'">📋 {{ entry.officer_name.split(" ", 2).join(" ")
+                }}</span>
+              <span v-else-if="entry.officer_duty == 'เวรประชาสัมพันธ์'">📢 {{ entry.officer_name.split(" ", 2).join("
+                ") }}</span>
+              <span v-else>👤 {{ entry.officer_name.split(" ", 2).join(" ") }}{{ entry.officer_duty ? ' - ' +
+                entry.officer_duty : '' }}</span>
+              <button class="entry-remove" @click="removeEntry(dayObj.dateStr, entry.officer_id, entry.officer_duty)"
+                title="ลบ">✕</button>
             </div>
           </div>
           <button class="add-entry-btn" @click="openAddEntry(dayObj.dateStr)" title="เพิ่มเวร">+</button>
@@ -264,7 +264,7 @@ onMounted(async () => {
     <div v-if="showAddEntryModal" class="modal-overlay" @click.self="showAddEntryModal = false">
       <div class="modal">
         <div class="modal-header">
-          <h3>➕ เพิ่มเวร - {{ entryForm.date }}</h3>
+          <h3>➕ เพิ่มเวร - {{ formatThaiDate(entryForm.date) }}</h3>
           <button class="close-btn" @click="showAddEntryModal = false">✕</button>
         </div>
         <div class="form-group">
@@ -296,10 +296,20 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.controls { display: flex; gap: 1.5rem; align-items: flex-end; flex-wrap: wrap; }
-.controls .form-group { min-width: 140px; }
+.controls {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
 
-.calendar-header { margin-bottom: 1rem; }
+.controls .form-group {
+  min-width: 140px;
+}
+
+.calendar-header {
+  margin-bottom: 1rem;
+}
 
 .calendar-grid {
   display: grid;
@@ -327,8 +337,15 @@ onMounted(async () => {
   transition: background 0.15s;
 }
 
-.cal-cell.empty { background: transparent; border: none; }
-.cal-cell.today { border-color: #3949ab; background: #f0f4ff; }
+.cal-cell.empty {
+  background: transparent;
+  border: none;
+}
+
+.cal-cell.today {
+  border-color: #3949ab;
+  background: #f0f4ff;
+}
 
 .cal-day-num {
   font-weight: 600;
@@ -349,7 +366,11 @@ onMounted(async () => {
   font-size: 0.75rem;
 }
 
-.cal-entries { display: flex; flex-direction: column; gap: 2px; }
+.cal-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 
 .cal-entry {
   background: #e3f2fd;
@@ -364,7 +385,12 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-.cal-entry span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.cal-entry span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
 
 .entry-remove {
   background: none;
@@ -396,5 +422,9 @@ onMounted(async () => {
   transition: all 0.15s;
 }
 
-.add-entry-btn:hover { background: #e8eaf6; color: #1a237e; border-color: #1a237e; }
+.add-entry-btn:hover {
+  background: #e8eaf6;
+  color: #1a237e;
+  border-color: #1a237e;
+}
 </style>
