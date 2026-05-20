@@ -76,6 +76,7 @@ function normalizeScheduleEntries(entries) {
         officer_id: officerId,
         officer_name: entry?.officer_name || (officer ? `${officer.rank} ${officer.name}` : 'ไม่ทราบชื่อ'),
         officer_duty: entry?.officer_duty || 'ไม่ระบุ',
+        phone: officer?.phone || null,
         date,
       }
     })
@@ -131,6 +132,7 @@ async function addEntry() {
     officer_id: officer._id,
     officer_name: `${officer.rank} ${officer.name}`,
     officer_duty: entryForm.value.officer_duty,
+    phone: officer.phone || null,
     date: entryForm.value.date,
   }
   console.log('Adding entry', newEntry)

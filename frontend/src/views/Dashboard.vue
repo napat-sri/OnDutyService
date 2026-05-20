@@ -54,7 +54,7 @@ onMounted(async () => {
     <div v-if="loading" class="text-center text-muted mt-2">กำลังโหลด...</div>
     <div v-else>
       <!-- Stats -->
-      <div class="stats-grid">
+      <!-- <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon">👮</div>
           <div class="stat-value">{{ stats.officers }}</div>
@@ -73,11 +73,13 @@ onMounted(async () => {
           <div class="stat-label">คำขอเปลี่ยนเวรรอดำเนินการ</div>
           <RouterLink to="/exchanges" class="stat-link">จัดการคำขอ →</RouterLink>
         </div>
-      </div>
+      </div> -->
 
       <!-- Today's duty -->
       <div class="card mt-2">
-        <h2 class="section-title">🗓️ เวรวันนี้ - {{ monthNames[currentMonth - 1] }} {{ formatThaiYear(currentYear) }}
+        <h2 class="section-title">🗓️ เวรประจำ{{ formatThaiDate(currentDate, {
+        weekday: 'long', year: 'numeric', month: 'long', day:
+          'numeric' }) }}
         </h2>
         <div v-if="dutyToday.length === 0" class="text-muted text-center mt-1">
           ยังไม่มีข้อมูลเวรสำหรับวันนี้
@@ -91,7 +93,7 @@ onMounted(async () => {
             <span class="duty-icon" v-else>📌</span>
             <div>
               <div class="duty-name">{{ entry.officer_name }}</div>
-              <div class="text-muted" style="font-size:0.85rem">{{ formatThaiDate(entry.date) }}</div>
+              <div class="text-muted" style="font-size:0.85rem">📞{{ entry.phone }}</div>
               <div class="text-muted" style="font-size:0.85rem">{{ entry.officer_duty }}</div>
             </div>
           </div>
